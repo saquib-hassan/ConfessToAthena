@@ -1,11 +1,12 @@
-﻿@page "/Chat"
-@using OpenAI.Net;
-@using ConfessToAthena.Data;
-@* @inject WeatherForecastService ForecastService *@
-@inject IOpenAIService openAiService;
+﻿@using ConfessToAthena.Data;
+@page "/chat"
+
 
 <PageTitle>Chat with Athena</PageTitle>
- @* I may remove it *@
+
+
+@using OpenAI.Net;
+@inject IOpenAIService openAiService;
 
 <h1>Chat with Athena</h1>
 
@@ -32,21 +33,102 @@
     private SearchInfo SearchModel = new SearchInfo();
     private List<ChatInfo> History = new List<ChatInfo>();
 
+    // private async Task Search()
+    // {
+    //     History.Add(new ChatInfo() { Message = SearchModel.SearchText, User = "flameonkey" });
+    //     History.Add(new ChatInfo() { Message = "", User = "Athena" });
+
+    //     await foreach(var response in openAiService.TextCompletion.GetStream(SearchModel.SearchText,o=>
+    //     {
+    //         o.MaxTokens = 1024;
+    //     }))
+    //     {
+    //         History[History.Count - 1].Message += response.Result.Choices[0].Text;
+    //         StateHasChanged();
+    //     }
+
+    //     SearchModel.SearchText = "";
+    // }
+
     private async Task Search()
     {
-        History.Add(new ChatInfo() { Message = SearchModel.SearchText, User = "flameonkey" });
-        History.Add(new ChatInfo() { Message = "", User = "AI" });
-
-        await foreach(var response in openAiService.TextCompletion.GetStream(SearchModel.SearchText))
+        try
         {
-            History[History.Count - 1].Message += response.Result.Choices[0].Text;
-        }
+            History.Add(new ChatInfo() { Message = SearchModel.SearchText, User = "flameonkey" });
+            History.Add(new ChatInfo() { Message = "", User = "Athena" });
 
-        SearchModel.SearchText = "";
+            await foreach (var response in openAiService.TextCompletion.GetStream(SearchModel.SearchText, o =>
+            {
+                o.MaxTokens = 60;
+            }))
+            {
+                History[History.Count - 1].Message += response.Result.Choices[0].Text;
+                Console.WriteLine($"Received response: {response.Result.Choices[0].Text}"); // Log the response
+                StateHasChanged();
+            }
+
+            SearchModel.SearchText = "";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            // Handle the exception or log it as needed
+        }
     }
+
+
+    // private async Task Search()
+    // {
+    //     try
+    //     {
+    //         History.Add(new ChatInfo() { Message = SearchModel.SearchText, User = "flameonkey" });
+    //         History.Add(new ChatInfo() { Message = "", User = "Athena" });
+
+    //         await ProcessOpenAIRequest(SearchModel.SearchText); // Extracted OpenAI request processing to a separate method
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         if (ex is OpenAIException openAIEx && openAIEx.HttpStatusCode == System.Net.HttpStatusCode.TooManyRequests)
+    //         {
+    //             await RetryOpenAIRequest(SearchModel.SearchText); // Retry the OpenAI request with exponential backoff
+    //         }
+    //         else
+    //         {
+    //             Console.WriteLine($"Error: {ex.Message}");
+    //             // Handle other exceptions
+    //         }
+    //     }
+    // }
+
+    // private async Task ProcessOpenAIRequest(string searchText)
+    // {
+    //     await foreach (var response in openAiService.TextCompletion.GetStream(searchText, o =>
+    //     {
+    //         o.MaxTokens = 60; // Adjusted maxTokens value
+    //     }))
+    //     {
+    //         History[History.Count - 1].Message += response.Result.Choices[0].Text;
+    //         StateHasChanged();
+    //     }
+
+    //     SearchModel.SearchText = "";
+    // }
+
+    // private async Task RetryOpenAIRequest(string searchText)
+    // {
+    //     await Task.Delay(5000); // Example: Wait for 5 seconds before retrying (adjustable)
+
+    //     await ProcessOpenAIRequest(searchText); // Retry the OpenAI request after the delay
+    // }
+
+
+
+
+
 
     protected override async Task OnInitializedAsync()
     {
         
     }
 }
+
