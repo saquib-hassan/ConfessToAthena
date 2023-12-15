@@ -1,5 +1,6 @@
 ﻿@page "/Chat"
 @using OpenAI.Net;
+@using ConfessToAthena.Data;
 @* @inject WeatherForecastService ForecastService *@
 @inject IOpenAIService openAiService;
 
@@ -8,39 +9,41 @@
 
 <h1>Chat with Athena</h1>
 
-@* <p>This component demonstrates fetching data from a service.</p>
+<EditForm Model="@SearchModel" OnValidSubmit="Search">
 
-@if (forecasts == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
-            {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-} *@
+    <InputText @bind-Value = "SearchModel.SearchText"></InputText>
+    <button type="submit">Search</button>
+
+</EditForm>
+
+<ul>
+    @foreach(var item in History)
+    {
+        <li>
+            <div>@item.User</div>
+            <div>@item.Message</div>
+
+        </li>
+    }
+
+</ul>
 
 @code {
-   
+    private SearchInfo SearchModel = new SearchInfo();
+    private List<ChatInfo> History = new List<ChatInfo>();
+
+    private async Task Search()
+    {
+        History.Add(new ChatInfo() { Message = SearchModel.SearchText, User = "flameonkey" });
+        History.Add(new ChatInfo() { Message = "", User = "AI" });
+
+        await foreach(var response in openAiService.TextCompletion.GetStream(SearchModel.SearchText))
+        {
+            History[History.Count - 1].Message += response.Result.Choices[0].Text;
+        }
+
+        SearchModel.SearchText = "";
+    }
 
     protected override async Task OnInitializedAsync()
     {
