@@ -4,6 +4,7 @@
     {
         public string Message { get; set; }
         public string User { get; set; }
+        public int MyProperty { get; set; }
 
     }
 }
